@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>NOVA 2.0 // OVERLORD</title>
+<style>
+:root{--bg:#020208;--card:#080c1c;--cyan:#00f0ff;--pink:#ff0055;--yellow:#ffe600;--green:#00ff66}
+*{box-sizing:border-box}body{margin:0;background:radial-gradient(circle at 50% 0,#101735 0,#020208 55%);color:var(--cyan);font:16px monospace;min-height:100vh}
+header{padding:18px 28px;border-bottom:3px solid var(--pink);display:flex;justify-content:space-between;align-items:center;background:#040612e8}
+h1{margin:0;color:#fff;text-shadow:3px 3px var(--pink),-3px -3px var(--cyan);letter-spacing:3px}
+main{max-width:1300px;margin:auto;padding:28px;display:grid;grid-template-columns:1fr 1fr;gap:24px}
+.card{background:#080c1ce8;border:2px solid var(--cyan);box-shadow:0 0 25px #00f0ff33,inset 0 0 18px #00f0ff18;border-radius:10px;padding:20px}
+h2{color:var(--pink);border-bottom:2px dashed var(--cyan);padding-bottom:10px}
+.row{display:flex;gap:10px;flex-wrap:wrap}input,select,button{background:#000;color:#fff;border:2px solid var(--cyan);padding:10px;font:inherit;border-radius:4px}input{flex:1;min-width:180px}button{cursor:pointer}button:hover{background:var(--cyan);color:#000}
+ul{list-style:none;padding:0}li{padding:12px;margin:8px 0;border-left:6px solid var(--pink);background:#040814;border:1px solid var(--cyan);display:flex;justify-content:space-between;gap:12px}.done{border-color:var(--green);opacity:.7;text-decoration:line-through}
+#console{height:280px;overflow:auto;background:#000;border:2px solid var(--cyan);padding:12px}.nova{color:var(--green)}.user{color:var(--cyan)}
+@media(max-width:900px){main{grid-template-columns:1fr}}
+</style></head>
+<body>
+<header><h1>⚡ NOVA 2.0 // OVERLORD</h1><div id="status">● ONLINE</div></header>
+<main>
+<section class="card"><h2>💥 TASK MATRIX</h2>
+<div class="row"><input id="task" placeholder="INPUT CORE DIRECTIVE..."><select id="prio"><option>High</option><option selected>Medium</option><option>Low</option></select><button id="add">ADD</button></div>
+<ul id="tasks"></ul></section>
+<section class="card"><h2>🤖 AGENT CONSOLE</h2>
+<div id="console"></div><div class="row" style="margin-top:10px"><input id="cmd" placeholder="Send directive to NOVA..."><button id="send">SEND</button></div></section>
+</main>
+<script>
+const taskEl=document.querySelector('#task'),prio=document.querySelector('#prio'),list=document.querySelector('#tasks'),con=document.querySelector('#console'),cmd=document.querySelector('#cmd');
+let tasks=JSON.parse(localStorage.nova_overkill_tasks||'[]');
+function log(w,m){let d=document.createElement('div');d.className=w.toLowerCase();d.textContent='['+w+'] '+m;con.appendChild(d);con.scrollTop=con.scrollHeight}
+async function api(path,opt){let r=await fetch(path,opt);if(!r.ok)throw Error(await r.text());return r.json()}
+async function load(){try{tasks=await api('/api/tasks');render()}catch(e){render()}}
+function render(){list.innerHTML='';tasks.forEach((t,i)=>{let li=document.createElement('li');li.className=t.completed?'done':'';let span=document.createElement('span');span.textContent=t.title+' ['+t.priority+']';span.onclick=async()=>{try{await api('/api/tasks/'+t.id+'/toggle',{method:'POST'})}catch(e){t.completed=!t.completed}load()};let b=document.createElement('button');b.textContent='NUKE';b.onclick=async()=>{try{await api('/api/tasks/'+t.id,{method:'DELETE'})}catch(e){tasks.splice(i,1)}load()};li.append(span,b);list.append(li)})}
+async function add(){let title=taskEl.value.trim();if(!title)return;try{await api('/api/tasks',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({title,category:'general'})})}catch(e){tasks.push({id:Date.now(),title,priority:prio.value,completed:false});localStorage.nova_overkill_tasks=JSON.stringify(tasks)}taskEl.value='';load()}
+async function send(){let q=cmd.value.trim();if(!q)return;log('User',q);cmd.value='';try{let d=await api('/api/query',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({query:q})});log('NOVA',d.response)}catch(e){log('NOVA','COMMAND PROCESSED LOCALLY: '+q)}}
+document.querySelector('#add').onclick=add;taskEl.onkeypress=e=>{if(e.key==='Enter')add()};document.querySelector('#send').onclick=send;cmd.onkeypress=e=>{if(e.key==='Enter')send()};load();log('SYS','NOVA 2.0 dashboard initialized.');
+</script></body></html>
