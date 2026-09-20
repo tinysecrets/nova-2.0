@@ -1,0 +1,29 @@
+"""
+Unit and integration tests for NOVA 2.0 modules.
+"""
+import unittest
+import os
+import tempfile
+from nova.memory.user_profile import UserProfile
+from nova.memory.conversation_history import ConversationHistory
+from nova.voice.voice_interface import VoiceInterface
+from nova.agents.core.nova_mind import NovaMind
+
+class TestNovaModules(unittest.TestCase):
+  def test_user_profile(self):
+    with tempfile.NamedTemporaryFile(suffix=".json",delete=False) as f: path=f.name
+    profile=UserProfile(name="Alice",config_path=path); profile.save()
+    self.assertEqual(UserProfile.load(config_path=path).name,"Alice"); os.remove(path)
+  def test_conversation_history(self):
+    with tempfile.NamedTemporaryFile(suffix=".json",delete=False) as f: path=f.name
+    history=ConversationHistory(db_path=path); history.add_entry("user","Hello")
+    self.assertEqual(len(history.get_recent()),1); os.remove(path)
+  def test_nova_mind_todo(self):
+    with tempfile.NamedTemporaryFile(suffix=".json",delete=False) as f: path=f.name
+    mind=NovaMind(storage_path=path); task=mind.add_task("Buy milk",priority="High",due_date="2026-12-31")
+    self.assertEqual(len(mind.get_all_tasks()),1); self.assertEqual(task.title,"Buy milk")
+    self.assertEqual(task.priority,"High"); self.assertEqual(task.due_date,"2026-12-31")
+    self.assertTrue(mind.toggle_task(task.id).completed); self.assertTrue(mind.delete_task(task.id))
+    self.assertEqual(len(mind.get_all_tasks()),0); os.remove(path)
+
+if __name__=="__main__": unittest.main()
